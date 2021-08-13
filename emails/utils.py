@@ -54,7 +54,9 @@ def get_email_domain_from_settings():
 
 
 @time_if_enabled('ses_send_email')
-def ses_send_email(from_address, to_address, subject, message_body):
+def ses_send_email(
+    from_address, to_address, subject, message_body, reply_address
+):
     emails_config = apps.get_app_config('emails')
     try:
         emails_config.ses_client.send_email(
@@ -62,6 +64,7 @@ def ses_send_email(from_address, to_address, subject, message_body):
             Message={
                 'Body': message_body,
                 'Subject': {'Charset': 'UTF-8', 'Data': subject},
+                'Reply-To': {'Charset': 'UTF-8', 'Data': reply_address}
             },
             Source=from_address,
             ConfigurationSetName=settings.AWS_SES_CONFIGSET,
@@ -75,7 +78,8 @@ def ses_send_email(from_address, to_address, subject, message_body):
 
 @time_if_enabled('ses_send_email')
 def ses_send_raw_email(
-        from_address, to_address, subject, message_body, attachments
+    from_address, to_address, subject, message_body, attachments,
+    reply_address
 ):
     charset = "UTF-8"
 
@@ -85,6 +89,7 @@ def ses_send_raw_email(
     msg['Subject'] = subject
     msg['From'] = from_address
     msg['To'] = to_address
+    msg['Reply-To'] = reply_address
 
     # Create a multipart/alternative child container.
     msg_body = MIMEMultipart('alternative')
@@ -142,7 +147,9 @@ def ses_send_raw_email(
 
 
 def ses_relay_email(from_address, address, subject,
-                    message_body, attachments, user_email):
+                    message_body, attachments, user):
+    user_email = user.email
+    reply_address = generate_reply_to(user)
     formatted_from_address = generate_relay_From(from_address)
     try:
         if attachments:
@@ -151,14 +158,16 @@ def ses_relay_email(from_address, address, subject,
                 user_email,
                 subject,
                 message_body,
-                attachments
+                attachments,
+                reply_address
             )
         else:
             response = ses_send_email(
                 formatted_from_address,
                 user_email,
                 subject,
-                message_body
+                message_body,
+                reply_address
             )
         address.num_forwarded += 1
         address.last_used_at = datetime.now(timezone.utc)
@@ -213,3 +222,9 @@ def generate_relay_From(original_from_address):
         )
     )
     return formatted_from_address
+
+
+def generate_reply_to(user):
+    if user.has_unlimited:
+        return 'replies@unfck.email'
+    return 'noreply@unfck.email'

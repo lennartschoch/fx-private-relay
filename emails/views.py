@@ -281,6 +281,9 @@ def _sns_message(message_json):
         incr_if_enabled('email_for_noreply_address', 1)
         return HttpResponse('noreply address is not supported.')
 
+    if local_portion == 'replies':
+        return _handle_reply(mail)
+
     domain_portion = to_address.split('@')[1]
 
     try:
@@ -370,8 +373,13 @@ def _sns_message(message_json):
 
     return ses_relay_email(
         from_address, address, subject,
-        message_body, attachments, user_profile.user.email,
+        message_body, attachments, user_profile.user,
     )
+
+
+def _handle_reply(mail):
+    import ipdb; ipdb.set_trace()
+    pass
 
 
 def _get_domain_address(to_address, local_portion, domain_portion):
