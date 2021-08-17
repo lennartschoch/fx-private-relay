@@ -325,8 +325,7 @@ class DomainAddress(models.Model):
         return super(DomainAddress, self).delete(*args, **kwargs)
 
 class Reply(models.Model):
-    relay_address = models.ForeignKey(RelayAddress, on_delete=models.CASCADE, blank=True)
-    domain_address = models.ForeignKey(DomainAddress, on_delete=models.CASCADE, blank=True)
-    out_message_fingerprint = models.CharField(max_length=16, blank=False)
-    in_message_id_enc = models.CharField(max_length=32, blank=False)
-    reply_address_enc = models.CharField(max_length=255, blank=False)
+    relay_address = models.ForeignKey(RelayAddress, on_delete=models.CASCADE, blank=True, null=True)
+    domain_address = models.ForeignKey(DomainAddress, on_delete=models.CASCADE, blank=True, null=True)
+    lookup = models.CharField(max_length=255, blank=False)
+    encrypted_metadata = models.TextField(blank=False)
